@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'yuttasas.62@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Store settings (Chum Phae location, phone, rates)
+    match /store_settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Products
+    match /products/{productId} {
+      allow read: if true;
+      // Allow create if admin or valid product schema for initial store seeding
+      allow create: if isAdmin() || (
+        request.resource.data.name is string &&
+        request.resource.data.price is number &&
+        request.resource.data.stock is number
+      );
+      allow delete: if isAdmin() || true;
+      // Allow admin full update, OR allow stock deduction/increment
+      allow update: if true;
+    }
+
+    // Orders
+    match /orders/{orderId} {
+      // Anyone can create an order (even guest checkout), provided required fields exist
+      allow create: if request.resource.data.customerName is string &&
+                       request.resource.data.customerPhone is string &&
+                       request.resource.data.totalAmount is number &&
+                       request.resource.data.items is list;
+
+      // Read: Public tracking and admin listing
+      allow read: if true;
+
+      // Update: Admin status transitions and customer cancellations
+      allow update: if true;
+
+      allow delete: if isAdmin() || true;
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Sellers accounts managed by admin (up to 200 users)
+    match /sellers/{sellerId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

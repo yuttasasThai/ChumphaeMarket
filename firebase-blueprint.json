@@ -1,0 +1,148 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Product item in the store inventory",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique product ID" },
+        "name": { "type": "string", "description": "Product name" },
+        "category": { "type": "string", "description": "Category slug or name" },
+        "price": { "type": "number", "description": "Retail price in THB" },
+        "costPrice": { "type": "number", "description": "Cost price for profit calculation" },
+        "stock": { "type": "number", "description": "Available stock quantity" },
+        "unit": { "type": "string", "description": "Unit name e.g. ถุง, แพ็ค, ขวด, ชิ้น, กก." },
+        "imageUrl": { "type": "string", "description": "Image URL or data URI" },
+        "description": { "type": "string", "description": "Product details" },
+        "isActive": { "type": "boolean", "description": "Whether product is active for sale" },
+        "createdAt": { "type": "string", "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["name", "price", "stock", "unit"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order with items, delivery info, and status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Order ID" },
+        "orderNumber": { "type": "string", "description": "Human-readable order sequence" },
+        "customerId": { "type": "string", "description": "UID or guest ID" },
+        "customerName": { "type": "string", "description": "Customer full name" },
+        "customerPhone": { "type": "string", "description": "Customer telephone number" },
+        "deliveryAddress": { "type": "string", "description": "Full delivery address" },
+        "customerLat": { "type": "number", "description": "Latitude for delivery pin" },
+        "customerLng": { "type": "number", "description": "Longitude for delivery pin" },
+        "distanceKm": { "type": "number", "description": "Calculated road distance in km" },
+        "deliveryFee": { "type": "number", "description": "Calculated delivery fee in THB" },
+        "subtotal": { "type": "number", "description": "Sum of item prices" },
+        "totalAmount": { "type": "number", "description": "Subtotal + deliveryFee" },
+        "items": { "type": "array", "description": "List of ordered items with quantities and prices" },
+        "paymentMethod": { "type": "string", "enum": ["promptpay", "cod"], "description": "Payment method" },
+        "slipUrl": { "type": "string", "description": "Proof of transfer / slip image URL or data URI" },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "confirmed", "preparing", "delivering", "completed", "cancelled"],
+          "description": "Order workflow status"
+        },
+        "notes": { "type": "string", "description": "Special customer notes" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last updated timestamp" }
+      },
+      "required": ["customerName", "customerPhone", "items", "totalAmount", "status", "paymentMethod"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product classification category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Category ID" },
+        "name": { "type": "string", "description": "Category name in Thai" },
+        "icon": { "type": "string", "description": "Icon identifier or emoji" },
+        "sortOrder": { "type": "number", "description": "Display order" }
+      },
+      "required": ["name"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile with role and contact information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "User ID matching auth UID" },
+        "name": { "type": "string", "description": "User display name" },
+        "email": { "type": "string", "description": "User email address" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "role": { "type": "string", "enum": ["admin", "customer"], "description": "User role" },
+        "address": { "type": "string", "description": "Saved delivery address" },
+        "defaultLat": { "type": "number", "description": "Saved latitude" },
+        "defaultLng": { "type": "number", "description": "Saved longitude" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["name", "role"]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Store operational settings, Chum Phae coordinates, delivery rules",
+      "type": "object",
+      "properties": {
+        "storeName": { "type": "string", "description": "Store name" },
+        "storePhone": { "type": "string", "description": "Store contact telephone" },
+        "storeAddress": { "type": "string", "description": "Chum Phae shop address" },
+        "storeLat": { "type": "number", "description": "Store latitude (default 16.525223)" },
+        "storeLng": { "type": "number", "description": "Store longitude (default 102.101480)" },
+        "promptpayNumber": { "type": "string", "description": "PromptPay ID or mobile for QR" },
+        "baseDeliveryFee": { "type": "number", "description": "Base fee for 0-3 km" },
+        "perKmFee": { "type": "number", "description": "Fee per extra km beyond base" },
+        "freeDeliveryThreshold": { "type": "number", "description": "Min order value for free delivery" },
+        "isOpen": { "type": "boolean", "description": "Store open/close status" },
+        "coverImageUrl": { "type": "string", "description": "Store banner cover image URL or data URI" }
+      },
+      "required": ["storeName", "storePhone", "storeLat", "storeLng"]
+    },
+    "Seller": {
+      "title": "Seller",
+      "description": "Seller account created by admin to list products",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique seller ID" },
+        "userId": { "type": "string", "description": "Login User ID" },
+        "password": { "type": "string", "description": "Login password" },
+        "shopName": { "type": "string", "description": "Seller display shop name" },
+        "phone": { "type": "string", "description": "Seller contact phone" },
+        "linkSlug": { "type": "string", "description": "Custom link code" },
+        "expiresAt": { "type": "string", "description": "Expiration date ISO timestamp" },
+        "isActive": { "type": "boolean", "description": "Active state" },
+        "notes": { "type": "string", "description": "Admin notes" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Update timestamp" }
+      },
+      "required": ["userId", "password", "shopName", "expiresAt"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Store items and inventory in Chum Phae shop"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer delivery and pickup orders with real-time status"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Product categories"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile with role (admin/customer) and saved address"
+    },
+    "/store_settings/{settingId}": {
+      "schema": "StoreSettings",
+      "description": "Store operational settings, Chum Phae shop coordinates, delivery rates"
+    },
+    "/sellers/{sellerId}": {
+      "schema": "Seller",
+      "description": "Seller accounts managed by admin (up to 200 users)"
+    }
+  }
+}

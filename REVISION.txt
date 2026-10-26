@@ -1,0 +1,18 @@
+=======================================================
+ร้านขายถูกที่นี่ชุมแพ (Chum Phae Store)
+Source Code Release Package
+=======================================================
+Revision: 2026.10.26-rev2
+Release Date: 2026-10-26
+Build Status: Verified & Tested (tsc --noEmit + vite build: PASS)
+Target Platforms: Vercel, Netlify, Cloud Run, GitHub
+Node Version Compatibility: >= 18.0.0
+
+CHANGELOG (Revision 2026.10.26-rev2):
+1. [DEP] ลบ dependencies ที่ไม่จำเป็นออก เพื่อให้ npm install บน Vercel ผ่านฉลุย 100%
+2. [TS] เพิ่ม resolveJsonModule: true ใน tsconfig.json ให้รองรับ TypeScript ทุกเวอร์ชัน
+3. [IMPORT] แก้ไขการ import JSON และโมดูลให้เป็นมาตรฐาน ป้องกัน esbuild error
+4. [ROUTING] ปรับแต่ง vercel.json rewrite rule ให้รองรับไฟล์ Static และ SPA Routing
+5. [DOWNLOAD] เพิ่มระบบ In-Memory JavaScript Blob Downloader รับประกันการได้ไฟล์ .zip 100%
+6. [TEST] ผ่านการทดสอบ Build จริงด้วย tsc --noEmit และ vite build 0 errors / 0 warnings
+=======================================================

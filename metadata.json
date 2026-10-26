@@ -1,0 +1,8 @@
+{
+  "name": "ขายถูกที่นี่ชุมแพ - ระบบสั่งซื้อและเดลิเวอรี่",
+  "description": "ร้านขายถูกที่นี่ชุมแพ ของใช้ในบ้าน ของกิน ของสด ของทั่วไป ราคาประหยัด คุณภาพดี ใกล้บ้านคุณ สั่งง่าย ส่งถึงบ้าน พร้อมระบบตัดสต็อกแบบเรียลไทม์",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
