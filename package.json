@@ -2,7 +2,7 @@
   "name": "chumphae-store",
   "private": true,
   "version": "1.0.0",
-  "revision": "2026.10.26-rev2",
+  "revision": "2026.10.29-rev8",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
