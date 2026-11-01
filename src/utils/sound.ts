@@ -123,7 +123,17 @@ export function playAdminOrderSound() {
   }, 220);
 }
 
-// 2. Play sound and voice "รับสินค้าแล้ว" for CUSTOMER ONLY
+// 2. Play sound and voice for SELLER PORTAL
+export function playSellerOrderSound(shopName?: string) {
+  unlockAudio();
+  playChimeAlert('alert');
+  setTimeout(() => {
+    const text = shopName ? `มีออเดอร์ใหม่ในร้าน ${shopName}` : 'มีออเดอร์ใหม่ในร้านของคุณ';
+    speakThaiText(text);
+  }, 220);
+}
+
+// 3. Play sound and voice "รับสินค้าแล้ว" for CUSTOMER ONLY
 export function playCustomerDeliveredSound() {
   unlockAudio();
   playChimeAlert('success');
