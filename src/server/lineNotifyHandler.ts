@@ -82,6 +82,22 @@ export async function getOrderFromFirestore(orderId: string): Promise<any | null
   }
 }
 
+// Fetch a specific seller from Firestore
+export async function getSellerFromFirestore(sellerId: string): Promise<any | null> {
+  try {
+    const url = `${getFirestoreBaseUrl()}/sellers/${sellerId}?key=${firebaseConfig.apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      return null;
+    }
+    const docData = await res.json();
+    return decodeFirestoreDoc(docData);
+  } catch (err) {
+    console.warn(`[LineNotify] Could not fetch seller ${sellerId} from Firestore:`, err);
+    return null;
+  }
+}
+
 // Query recent unnotified orders from Firestore
 export async function getUnnotifiedOrdersFromFirestore(): Promise<any[]> {
   try {
@@ -187,7 +203,7 @@ export async function sendToLineNotify(token: string, message: string): Promise<
   }
 }
 
-// Format detailed Thai notification message for an order
+// Format detailed Thai notification message for Admin
 export function formatOrderLineMessage(order: any, storeSettings?: any): string {
   const storeName = storeSettings?.storeName || 'ขายถูกที่นี่ชุมแพ';
   const orderNumber = order.orderNumber || order.id || 'N/A';
@@ -204,13 +220,14 @@ export function formatOrderLineMessage(order: any, storeSettings?: any): string 
   const distanceText = order.distanceKm ? ` (ระยะทางประมาณ ${Number(order.distanceKm).toFixed(1)} กม.)` : '';
   const addressText = order.deliveryAddress ? order.deliveryAddress.trim() : 'ตามที่แจ้ง';
 
-  // Items list
+  // Items list with Seller Name tags
   const items: any[] = Array.isArray(order.items) ? order.items : [];
   const itemsText = items.map((it: any, index: number) => {
     const qty = it.quantity || 1;
     const unit = it.unit || 'ชิ้น';
     const subtotal = Number(it.subtotal || (it.price * qty) || 0).toLocaleString();
-    return `${index + 1}. ${it.name} x ${qty} ${unit} = ${subtotal} บ.`;
+    const sellerTag = it.sellerName ? ` [ร้าน: ${it.sellerName}]` : '';
+    return `${index + 1}. ${it.name}${sellerTag} x ${qty} ${unit} = ${subtotal} บ.`;
   }).join('\n');
 
   // Format date in Thai
@@ -273,28 +290,97 @@ export function formatOrderLineMessage(order: any, storeSettings?: any): string 
   return msg;
 }
 
-// Main processor: Notify an order using data retrieved from Firestore
-export async function processOrderLineNotification(orderId: string, fallbackOrderData?: any, customToken?: string): Promise<LineNotifyResult> {
-  // 1. Fetch store settings to get token and enabled status
-  const settings = await getStoreSettingsFromFirestore();
-  const token = customToken || settings?.lineNotifyToken || process.env.LINE_NOTIFY_TOKEN || process.env.VITE_LINE_NOTIFY_TOKEN;
-  
-  if (!token || !token.trim()) {
-    console.log('[LineNotify] No token configured in settings or environment. Skipping notification.');
-    return {
-      success: false,
-      message: 'ยังไม่ได้ตั้งค่า LINE Notify Token ในการตั้งค่าร้านค้า',
-    };
+// Format dedicated notification message for a Co-Seller
+export function formatSellerOrderLineMessage(order: any, seller: any, sellerItems: any[]): string {
+  const shopName = seller.shopName || seller.userId || 'ร้านค้าของคุณ';
+  const orderNumber = order.orderNumber || order.id || 'N/A';
+  const customerName = order.customerName || 'ลูกค้า';
+  const customerPhone = order.customerPhone || 'ไม่ระบุ';
+
+  let fulfillmentLabel = 'จัดส่งถึงที่';
+  if (order.fulfillmentType === 'pickup') {
+    fulfillmentLabel = 'มารับสินค้าเองที่ร้านชุมแพ';
+  } else if (order.fulfillmentType === 'meetup') {
+    fulfillmentLabel = 'นัดรับสินค้า';
   }
 
-  // Check if enabled (defaults to true if token exists)
-  if (settings && settings.lineNotifyEnabled === false && !customToken) {
-    console.log('[LineNotify] LINE Notify is disabled in store settings.');
-    return {
-      success: false,
-      message: 'ปิดการแจ้งเตือน LINE Notify ไว้ในการตั้งค่าร้านค้า',
-    };
+  const addressText = order.deliveryAddress ? order.deliveryAddress.trim() : 'ตามที่นัดหมาย';
+
+  let sellerSubtotal = 0;
+  const itemsText = sellerItems.map((it: any, index: number) => {
+    const qty = it.quantity || 1;
+    const unit = it.unit || 'ชิ้น';
+    const subtotal = Number(it.subtotal || (it.price * qty) || 0);
+    sellerSubtotal += subtotal;
+    return `${index + 1}. ${it.name} x ${qty} ${unit} = ${subtotal.toLocaleString()} บ.`;
+  }).join('\n');
+
+  let formattedDate = '';
+  try {
+    const dateObj = order.createdAt ? new Date(order.createdAt) : new Date();
+    formattedDate = dateObj.toLocaleString('th-TH', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    formattedDate = new Date().toLocaleString();
   }
+
+  let msg = `\n🔔 [ร้านขายถูกที่นี่ชุมแพ] มีคำสั่งซื้อสินค้าในร้านของคุณ!`;
+  msg += `\n🏪 ร้านค้า: ${shopName}`;
+  msg += `\n━━━━━━━━━━━━━━━━`;
+  msg += `\n🔖 รหัสสั่งซื้อ: #${orderNumber}`;
+  msg += `\n👤 ลูกค้า: คุณ ${customerName}`;
+  msg += `\n📞 โทร: ${customerPhone}`;
+  msg += `\n🛵 รูปแบบรับสินค้า: ${fulfillmentLabel}`;
+  msg += `\n📍 จุดจัดส่ง: ${addressText}`;
+  msg += `\n━━━━━━━━━━━━━━━━`;
+  msg += `\n🛍️ สินค้าของร้านคุณที่ต้องเตรียม (${sellerItems.length} รายการ):`;
+  msg += `\n${itemsText}`;
+  msg += `\n━━━━━━━━━━━━━━━━`;
+  msg += `\n💰 ยอดรวมสินค้าของคุณ: ${sellerSubtotal.toLocaleString()} บาท`;
+  if (order.notes && order.notes.trim()) {
+    msg += `\n📝 หมายเหตุลูกค้า: ${order.notes.trim()}`;
+  }
+  msg += `\n⏰ เวลาสั่งซื้อ: ${formattedDate} น.`;
+  msg += `\n━━━━━━━━━━━━━━━━`;
+  msg += `\n👉 แตะเพื่อดูออเดอร์ในระบบผู้ขาย:`;
+  msg += `\nhttps://ais-pre-sgegekyar4pyqrjy6gtlkg-975508169959.asia-southeast1.run.app/seller?user=${seller.userId || seller.linkSlug}`;
+
+  return msg;
+}
+
+// Send activation message to Seller's LINE
+export async function sendSellerActivationLineNotification(
+  token: string,
+  shopName: string,
+  activationUrl: string
+): Promise<LineNotifyResult> {
+  let msg = `\n🔔 [ร้านขายถูกที่นี่ชุมแพ] ยืนยันการสมัครผู้ขายร่วม`;
+  msg += `\n🏪 ร้านค้า: ${shopName}`;
+  msg += `\n━━━━━━━━━━━━━━━━`;
+  msg += `\nยินดีต้อนรับสู่ระบบร้านขายถูกที่นี่ชุมแพ!`;
+  msg += `\nกรุณาแตะลิงก์ด้านล่างเพื่อยืนยันเปิดใช้งานร้านค้าของคุณ:`;
+  msg += `\n👉 ${activationUrl}`;
+  msg += `\n━━━━━━━━━━━━━━━━`;
+  msg += `\nเมื่อแตะยืนยันแล้ว ร้านของคุณจะเปิดใช้งานทันที และสามารถเริ่มลงขายสินค้าได้เลยครับ 🎉`;
+
+  return sendToLineNotify(token, msg);
+}
+
+// Main processor: Notify an order to ADMIN AND all relevant CO-SELLERS
+export async function processOrderLineNotification(
+  orderId: string,
+  fallbackOrderData?: any,
+  customToken?: string
+): Promise<LineNotifyResult> {
+  // 1. Fetch store settings to get Admin token
+  const settings = await getStoreSettingsFromFirestore();
+  const adminToken = customToken || settings?.lineNotifyToken || process.env.LINE_NOTIFY_TOKEN || process.env.VITE_LINE_NOTIFY_TOKEN;
 
   // 2. Retrieve authoritative order details from Firestore
   let order = await getOrderFromFirestore(orderId);
@@ -309,20 +395,58 @@ export async function processOrderLineNotification(orderId: string, fallbackOrde
     };
   }
 
-  // 3. Format message and send to LINE
-  const message = formatOrderLineMessage(order, settings);
-  const result = await sendToLineNotify(token, message);
+  let adminResult: LineNotifyResult = { success: false, message: 'ไม่ได้ตั้งค่า Token แอดมิน' };
 
-  // 4. Update Firestore with notification outcome
-  if (result.success) {
-    await markOrderAsNotifiedInFirestore(orderId, 'sent');
-    console.log(`[LineNotify] Successfully notified order #${order.orderNumber || orderId} to LINE`);
-  } else {
-    await markOrderAsNotifiedInFirestore(orderId, 'failed', result.message);
-    console.warn(`[LineNotify] Failed to notify order #${orderId} to LINE:`, result.message);
+  // 3. Notify Admin (if configured and enabled)
+  if (adminToken && (settings?.lineNotifyEnabled !== false || customToken)) {
+    const adminMessage = formatOrderLineMessage(order, settings);
+    adminResult = await sendToLineNotify(adminToken, adminMessage);
+    if (adminResult.success) {
+      await markOrderAsNotifiedInFirestore(orderId, 'sent');
+      console.log(`[LineNotify] Successfully notified Admin for order #${order.orderNumber || orderId}`);
+    } else {
+      await markOrderAsNotifiedInFirestore(orderId, 'failed', adminResult.message);
+      console.warn(`[LineNotify] Failed to notify Admin for order #${orderId}:`, adminResult.message);
+    }
   }
 
-  return result;
+  // 4. Notify Co-Sellers whose items are in this order
+  const items: any[] = Array.isArray(order.items) ? order.items : [];
+  const sellerItemsMap: Record<string, any[]> = {};
+
+  for (const it of items) {
+    const sid = it.sellerId;
+    if (sid && sid !== 'admin') {
+      if (!sellerItemsMap[sid]) sellerItemsMap[sid] = [];
+      sellerItemsMap[sid].push(it);
+    }
+  }
+
+  const sellerIds = Object.keys(sellerItemsMap);
+  let notifiedSellersCount = 0;
+
+  for (const sid of sellerIds) {
+    try {
+      const seller = await getSellerFromFirestore(sid);
+      if (seller && seller.lineNotifyToken && seller.lineNotifyEnabled !== false) {
+        const sellerMsg = formatSellerOrderLineMessage(order, seller, sellerItemsMap[sid]);
+        const sRes = await sendToLineNotify(seller.lineNotifyToken, sellerMsg);
+        if (sRes.success) {
+          notifiedSellersCount++;
+          console.log(`[LineNotify] Successfully notified Seller "${seller.shopName}" (${seller.userId})`);
+        } else {
+          console.warn(`[LineNotify] Failed to notify Seller "${seller.shopName}":`, sRes.message);
+        }
+      }
+    } catch (sellerErr) {
+      console.warn(`[LineNotify] Error processing notification for seller ${sid}:`, sellerErr);
+    }
+  }
+
+  return {
+    success: adminResult.success || notifiedSellersCount > 0,
+    message: `แจ้งเตือนสำเร็จ (แอดมิน: ${adminResult.success ? 'ส่งแล้ว' : 'ข้าม'}, ผู้ขายร่วม: ${notifiedSellersCount} ร้าน)`,
+  };
 }
 
 // Background poller that periodically checks Firestore for new unnotified orders
