@@ -55,7 +55,7 @@ import { AdminLoginModal } from './components/AdminLoginModal';
 import { CoverImageModal } from './components/CoverImageModal';
 import { SellerPortal } from './components/SellerPortal';
 import { ChumPhaeMap } from './components/ChumPhaeMap';
-import { playAdminOrderSound, playCustomerDeliveredSound } from './utils/sound';
+import { playAdminOrderSound, playSellerOrderSound, playCustomerDeliveredSound } from './utils/sound';
 import { loginAdminClient } from './utils/adminAuthClient';
 import {
   MapPin,
@@ -396,8 +396,29 @@ export default function App() {
           ) {
             playAdminOrderSound();
           }
+        } else {
+          // 2. Seller portal link sound: "มีออเดอร์เข้า" on seller link or when seller is logged in
+          const isCurrentlySeller =
+            isPathSeller(window.location.pathname, window.location.search) ||
+            Boolean(sessionStorage.getItem('chumphae_seller_session'));
+
+          if (
+            isCurrentlySeller &&
+            previousOrdersCountRef.current !== null &&
+            ords.length > previousOrdersCountRef.current
+          ) {
+            let shopName: string | undefined;
+            try {
+              const raw = sessionStorage.getItem('chumphae_seller_session');
+              if (raw) {
+                const s = JSON.parse(raw);
+                shopName = s?.shopName;
+              }
+            } catch {}
+            playSellerOrderSound(shopName);
+          }
         }
-        // 2. Customer link: Strict silence for incoming orders (NO order alert sound at all)
+        // 3. Customer link: Strict silence for incoming orders (NO order alert sound at all)
 
         previousOrdersCountRef.current = ords.length;
         const newStatusMap: Record<string, string> = {};
@@ -753,6 +774,7 @@ export default function App() {
             sellers={sellers}
             products={products}
             categories={categories}
+            orders={orders}
             onSaveProduct={handleSaveProduct}
             onDeleteProduct={handleDeleteProduct}
             onUpdateStock={handleUpdateProductStock}

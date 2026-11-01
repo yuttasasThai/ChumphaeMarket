@@ -33,9 +33,15 @@ export interface SellerAccount {
   password: string;
   shopName: string;
   phone?: string;
+  lineId?: string;
+  lineNotifyToken?: string;
+  lineNotifyEnabled?: boolean;
   linkSlug: string;
   expiresAt: string; // ISO string e.g. 2026-12-31T23:59:59.000Z
   isActive: boolean;
+  isActivated?: boolean;
+  activationToken?: string;
+  activatedAt?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -55,6 +61,8 @@ export interface OrderItem {
   unit: string;
   subtotal: number;
   imageUrl?: string;
+  sellerId?: string;
+  sellerName?: string;
 }
 
 export interface Order {
