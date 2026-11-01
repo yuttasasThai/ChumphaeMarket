@@ -135,16 +135,23 @@ export const Header: React.FC<HeaderProps> = ({
                       </button>
 
                       {/* Download Source Code ZIP button (Only visible in admin link) */}
-                      <a
-                        href="/api/admin/download-source"
-                        download="chumphae-store-source.zip"
-                        className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-2xs active:scale-95"
-                        title="ดาวน์โหลด Source Code ทั้งหมดของระบบ (ZIP) สำหรับนำขึ้น GitHub และ Vercel"
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const { downloadSourceCodeArchive } = await import('../utils/sourceDownloader');
+                            await downloadSourceCodeArchive();
+                          } catch (e: any) {
+                            alert(e?.message || 'เกิดข้อผิดพลาดในการดาวน์โหลด');
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-2xs active:scale-95 border-0"
+                        title="ดาวน์โหลด Source Code ทั้งหมดของระบบ (ZIP Rev 8) บันทึกลงเครื่องแท้ 100%"
                       >
                         <Download className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">โหลด Source Code</span>
-                        <span className="sm:hidden">ZIP</span>
-                      </a>
+                        <span className="hidden sm:inline">โหลดโค้ด Rev 8 (.zip)</span>
+                        <span className="sm:hidden">Rev 8 ZIP</span>
+                      </button>
 
                       <button
                         type="button"

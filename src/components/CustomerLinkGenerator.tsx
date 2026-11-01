@@ -587,14 +587,21 @@ ${categoryName ? `✨ หมวดหมู่: ${categoryName}\n` : ''}🔥 ร
           </p>
         </div>
 
-        <a
-          href="/api/admin/download-source"
-          download="chumphae-store-source.zip"
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const { downloadSourceCodeArchive } = await import('../utils/sourceDownloader');
+              await downloadSourceCodeArchive();
+            } catch (e: any) {
+              alert(e?.message || 'เกิดข้อผิดพลาดในการดาวน์โหลด');
+            }
+          }}
           className="shrink-0 flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer border border-emerald-400"
         >
           <Download className="w-4 h-4 text-emerald-200" />
-          <span>📥 ดาวน์โหลด Source Code (ZIP)</span>
-        </a>
+          <span>📥 ดาวน์โหลด Source Code (ZIP Rev 8 แท้ 100%)</span>
+        </button>
       </div>
 
     </div>

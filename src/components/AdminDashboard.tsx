@@ -552,45 +552,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setTimeout(() => setSettingsSuccessMessage(null), 4500);
   };
 
-  // Reliable In-Memory Blob ZIP Downloader (Prevents browser from saving HTML fallback in iFrame)
+  // Reliable In-Session ZIP Downloader (Prevents unauthenticated new-tab redirect to HTML)
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
 
   const handleDirectDownloadZip = async () => {
     setIsDownloadingZip(true);
     try {
-      const response = await fetch('/chumphae-store-source.zip', {
-        cache: 'no-store',
-        headers: {
-          'Accept': 'application/zip, application/octet-stream',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      const { downloadSourceCodeArchive } = await import('../utils/sourceDownloader');
+      const res = await downloadSourceCodeArchive();
+      if (res.success && res.method !== 'share') {
+        alert(`ดาวน์โหลดสำเร็จ! ไฟล์ ${res.filename} (${(res.sizeBytes / (1024 * 1024)).toFixed(2)} MB)`);
       }
-
-      const contentType = response.headers.get('content-type') || '';
-      if (contentType.includes('text/html')) {
-        throw new Error('Server returned HTML');
-      }
-
-      const blob = await response.blob();
-      const zipBlob = new Blob([blob], { type: 'application/zip' });
-      const blobUrl = window.URL.createObjectURL(zipBlob);
-
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.setAttribute('download', 'chumphae-store-source.zip');
-      document.body.appendChild(link);
-      link.click();
-
-      setTimeout(() => {
-        window.URL.revokeObjectURL(blobUrl);
-        document.body.removeChild(link);
-      }, 1500);
-    } catch {
-      // Direct tab fallback if fetch or blob fails
-      window.open('/chumphae-store-source.zip', '_blank');
+    } catch (err: any) {
+      alert(err?.message || 'เกิดข้อผิดพลาดในการดาวน์โหลด');
     } finally {
       setIsDownloadingZip(false);
     }
@@ -951,17 +925,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 onClick={handleDirectDownloadZip}
                 disabled={isDownloadingZip}
                 className="px-4 py-2 sm:py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white font-black rounded-2xl text-xs sm:text-sm shadow-md flex items-center gap-2 cursor-pointer transition-all border border-emerald-400/40 disabled:opacity-60"
-                title="กดเพื่อดาวน์โหลด Source Code ทั้งหมดของระบบเป็นไฟล์ ZIP (ขนาด ~3.2 MB รับประกันไฟล์ .zip 100%)"
+                title="กดเพื่อดาวน์โหลด Source Code ทั้งหมดของระบบเป็นไฟล์ ZIP Rev 7 (รับประกันไฟล์ .zip 100% แก้ปัญหา Vercel แล้ว)"
               >
                 {isDownloadingZip ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>กำลังส่งไฟล์ ZIP...</span>
+                    <span>กำลังโหลดไฟล์ Rev 8...</span>
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4 text-emerald-200 shrink-0" />
-                    <span>ดาวน์โหลดโค้ด (ZIP)</span>
+                    <span>ดาวน์โหลดโค้ด Rev 8 (ZIP)</span>
                   </>
                 )}
               </button>
@@ -2040,8 +2014,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                                 {/* 2) ชื่อสินค้า */}
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-bold text-stone-900 text-xs truncate">
-                                    {it.name}
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-bold text-stone-900 text-xs truncate">
+                                      {it.name}
+                                    </span>
+                                    {it.sellerName && (
+                                      <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded font-bold">
+                                        🏪 {it.sellerName}
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="text-[11px] text-stone-500">
                                     จำนวน: <span className="font-bold text-stone-800">{it.quantity} {it.unit}</span>
@@ -3071,7 +3052,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </div>
                           </td>
                           <td className="p-2.5">
-                            <div className="font-bold text-stone-900">{it.name}</div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-stone-900">{it.name}</span>
+                              {it.sellerName && (
+                                <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded font-bold">
+                                  🏪 {it.sellerName}
+                                </span>
+                              )}
+                            </div>
                             <div className="text-[10px] text-stone-400">หน่วย: {it.unit}</div>
                           </td>
                           <td className="p-2.5 text-right font-medium text-stone-700">

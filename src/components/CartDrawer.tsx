@@ -239,6 +239,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           unit: item.product.unit || 'ชิ้น',
           subtotal: Number(item.product.price * item.quantity),
           imageUrl: item.product.imageUrl || '',
+          sellerId: item.product.sellerId || 'admin',
+          sellerName: item.product.sellerName || settings.storeName || 'ร้านหลักชุมแพ',
         })),
         ...(fulfillmentType === 'meetup'
           ? { deliveryFeeNotice: 'ยังไม่รวมค่าจัดส่ง (นัดหมายจุดรับ โทร 099-225-6601)' }

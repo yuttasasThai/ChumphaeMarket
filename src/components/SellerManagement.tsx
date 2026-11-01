@@ -55,9 +55,12 @@ export const SellerManagement: React.FC<SellerManagementProps> = ({
   const [formPassword, setFormPassword] = useState('');
   const [formShopName, setFormShopName] = useState('');
   const [formPhone, setFormPhone] = useState('');
+  const [formLineId, setFormLineId] = useState('');
+  const [formLineNotifyToken, setFormLineNotifyToken] = useState('');
   const [formLinkSlug, setFormLinkSlug] = useState('');
   const [formExpiresAt, setFormExpiresAt] = useState('');
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formIsActivated, setFormIsActivated] = useState(true);
   const [formNotes, setFormNotes] = useState('');
 
   // Password visibility state per seller ID
@@ -102,6 +105,8 @@ export const SellerManagement: React.FC<SellerManagementProps> = ({
     setFormPassword(Math.random().toString(36).slice(-8));
     setFormShopName('');
     setFormPhone('');
+    setFormLineId('');
+    setFormLineNotifyToken('');
     setFormLinkSlug(`seller${nextSeq}`);
     
     // Default expiration: +90 days from now
@@ -110,6 +115,7 @@ export const SellerManagement: React.FC<SellerManagementProps> = ({
     setFormExpiresAt(defaultExpiry.toISOString().slice(0, 10));
 
     setFormIsActive(true);
+    setFormIsActivated(true);
     setFormNotes('');
     setFormError(null);
     setIsModalOpen(true);
@@ -122,9 +128,12 @@ export const SellerManagement: React.FC<SellerManagementProps> = ({
     setFormPassword(seller.password);
     setFormShopName(seller.shopName);
     setFormPhone(seller.phone || '');
+    setFormLineId(seller.lineId || '');
+    setFormLineNotifyToken(seller.lineNotifyToken || '');
     setFormLinkSlug(seller.linkSlug || seller.userId);
     setFormExpiresAt(seller.expiresAt ? seller.expiresAt.slice(0, 10) : '');
     setFormIsActive(seller.isActive ?? true);
+    setFormIsActivated(seller.isActivated ?? true);
     setFormNotes(seller.notes || '');
     setFormError(null);
     setIsModalOpen(true);
@@ -184,9 +193,13 @@ export const SellerManagement: React.FC<SellerManagementProps> = ({
         password: cleanPass,
         shopName: cleanShop,
         phone: formPhone.trim(),
+        lineId: formLineId.trim(),
+        lineNotifyToken: formLineNotifyToken.trim(),
+        lineNotifyEnabled: Boolean(formLineNotifyToken.trim()),
         linkSlug: cleanSlug,
         expiresAt: expiryDate,
         isActive: formIsActive,
+        isActivated: formIsActivated,
         notes: formNotes.trim(),
         updatedAt: new Date().toISOString(),
       };
@@ -506,6 +519,27 @@ export const SellerManagement: React.FC<SellerManagementProps> = ({
                             <span>{seller.phone}</span>
                           </div>
                         )}
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                          {seller.isActivated ? (
+                            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
+                              ✓ ยืนยันผ่าน LINE แล้ว
+                            </span>
+                          ) : (
+                            <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-bold">
+                              รอยืนยัน LINE
+                            </span>
+                          )}
+                          {seller.lineId && (
+                            <span className="text-[10px] text-stone-600 bg-stone-100 px-1.5 py-0.5 rounded">
+                              💬 LINE: {seller.lineId}
+                            </span>
+                          )}
+                          {seller.lineNotifyToken && (
+                            <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-bold">
+                              🔔 LINE แจ้งเตือน: เปิด
+                            </span>
+                          )}
+                        </div>
                         {seller.notes && (
                           <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/60 rounded px-1.5 py-0.5 mt-1 inline-block">
                             โน้ต: {seller.notes}
@@ -806,6 +840,35 @@ export const SellerManagement: React.FC<SellerManagementProps> = ({
                     className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 focus:outline-hidden focus:border-teal-600 text-xs font-mono"
                   />
                   <span className="text-[10px] text-stone-400">/seller?code={formLinkSlug || 'code'}</span>
+                </div>
+              </div>
+
+              {/* LINE Configuration for Seller */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-emerald-50/60 rounded-2xl border border-emerald-200">
+                <div>
+                  <label className="block font-bold text-emerald-950 mb-1 text-xs">
+                    LINE ID ผู้ขาย
+                  </label>
+                  <input
+                    type="text"
+                    value={formLineId}
+                    onChange={(e) => setFormLineId(e.target.value)}
+                    placeholder="เช่น pa_phen68"
+                    className="w-full px-3.5 py-2 bg-white rounded-xl border border-stone-200 focus:outline-hidden focus:border-teal-600 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-emerald-950 mb-1 text-xs">
+                    LINE Notify Token ของร้านค้า
+                  </label>
+                  <input
+                    type="text"
+                    value={formLineNotifyToken}
+                    onChange={(e) => setFormLineNotifyToken(e.target.value)}
+                    placeholder="วาง Token เช่น lk4h98..."
+                    className="w-full px-3.5 py-2 bg-white rounded-xl border border-stone-200 focus:outline-hidden focus:border-teal-600 text-xs font-mono"
+                  />
                 </div>
               </div>
 
